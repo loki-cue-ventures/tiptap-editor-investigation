@@ -82,7 +82,9 @@ const ContentEditor = ({ initialContent, onSave }: ContentEditorProps) => {
         types: ['heading', 'paragraph']
       }),
       FontFamily,
-      TextStyle,
+      // TextStyle.configure({
+      //   defaultFontSize: '16px'
+      // }),
       Color,
       
       // Para fórmulas financieras

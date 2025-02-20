@@ -123,4 +123,16 @@
 
 .financial-table th {
   background-color: #f9fafb;
+}
+
+.text-sm {
+  font-size: 0.875rem;
+}
+
+.text-base {
+  font-size: 1rem;
+}
+
+.text-lg {
+  font-size: 1.25rem;
 } 
