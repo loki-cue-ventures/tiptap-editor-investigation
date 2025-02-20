@@ -24,11 +24,12 @@ import TextAlign from '@tiptap/extension-text-align';
 import FontFamily from '@tiptap/extension-font-family';
 import TextStyle from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
-import FontSize from '@tiptap/extension-font-size';
+import { FontSizeExtension } from '../extensions/FontSizeExtension';
 // import Mathematics from '@tiptap/extension-mathematics';
 // import TrackChanges from '@tiptap/extension-track-changes';
 // import Comments from '@tiptap/extension-comments';
 import { EditorToolbar } from './EditorToolbar';
+import { format } from 'date-fns';
 
 interface Version {
   content: string;
@@ -70,6 +71,7 @@ const ContentEditor = ({ initialContent, onSave }: ContentEditorProps) => {
   });
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
   const [versionToRestore, setVersionToRestore] = useState<string | null>(null);
+  const [contentBeforeEdit, setContentBeforeEdit] = useState<string | null>(null);
 
   const editor = useEditor({
     extensions: [
@@ -118,8 +120,10 @@ const ContentEditor = ({ initialContent, onSave }: ContentEditorProps) => {
       }),
       FontFamily,
       TextStyle,
-      FontSize,
       Color,
+      FontSizeExtension.configure({
+        types: ['textStyle', 'paragraph', 'heading']
+      }),
       
       // Para fórmulas financieras
       // Mathematics,
@@ -149,9 +153,23 @@ const ContentEditor = ({ initialContent, onSave }: ContentEditorProps) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(versions));
   }, [versions]);
 
-  const toggleEdit = () => {
-    if (isEditing && editor) {
-      // Al guardar, crear nueva versión
+  const startEditing = () => {
+    if (editor) {
+      setContentBeforeEdit(editor.getHTML());
+      setIsEditing(true);
+    }
+  };
+
+  const cancelEdit = () => {
+    if (editor && contentBeforeEdit !== null) {
+      editor.commands.setContent(contentBeforeEdit);
+      setContentBeforeEdit(null);
+      setIsEditing(false);
+    }
+  };
+
+  const saveEdit = () => {
+    if (editor) {
       const newVersion: Version = {
         content: editor.getHTML(),
         timestamp: Date.now(),
@@ -161,8 +179,9 @@ const ContentEditor = ({ initialContent, onSave }: ContentEditorProps) => {
       setVersions(prev => [...prev, newVersion]);
       setCurrentVersionId(newVersion.id);
       onSave(newVersion.content);
+      setContentBeforeEdit(null);
+      setIsEditing(false);
     }
-    setIsEditing(!isEditing);
   };
 
   const loadVersion = (versionId: string) => {
@@ -201,6 +220,41 @@ const ContentEditor = ({ initialContent, onSave }: ContentEditorProps) => {
     }
   };
 
+  const formatVersionLabel = (version: Version) => {
+    const date = new Date(version.timestamp);
+    const isToday = new Date().toDateString() === date.toDateString();
+    
+    // Para versiones de hoy, mostrar solo la hora
+    const timeStr = format(date, 'HH:mm:ss');
+    const dateStr = isToday ? 'Today' : format(date, 'MMM dd, yyyy');
+    
+    let label = `${dateStr} ${timeStr}`;
+    
+    // Añadir indicadores especiales
+    if (version.id === versions[versions.length - 1].id) {
+      label += ' (Latest)';
+    }
+    if (version.restoredFrom) {
+      label += ' (Restored)';
+    }
+    
+    return label;
+  };
+
+  const groupVersionsByDate = () => {
+    const groups: { [key: string]: Version[] } = {};
+    
+    versions.forEach(version => {
+      const date = new Date(version.timestamp).toDateString();
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(version);
+    });
+    
+    return groups;
+  };
+
   return (
     <div className="content-editor">
       {isEditing && <EditorToolbar editor={editor} />}
@@ -210,14 +264,14 @@ const ContentEditor = ({ initialContent, onSave }: ContentEditorProps) => {
             value={currentVersionId}
             onChange={(e) => loadVersion(e.target.value)}
           >
-            {versions.map(version => (
-              <option key={version.id} value={version.id}>
-                {version.restoredFrom 
-                  ? `${new Date(version.timestamp).toLocaleString()} (Restored from ${new Date(version.restoredFrom.timestamp).toLocaleString()})`
-                  : new Date(version.timestamp).toLocaleString()
-                }
-                {version.id === versions[versions.length - 1].id ? ' (Latest)' : ''}
-              </option>
+            {Object.entries(groupVersionsByDate()).reverse().map(([date, dateVersions]) => (
+              <optgroup key={date} label={date === new Date().toDateString() ? 'Today' : format(new Date(date), 'MMM dd, yyyy')}>
+                {dateVersions.reverse().map(version => (
+                  <option key={version.id} value={version.id}>
+                    {formatVersionLabel(version)}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
           <button 
@@ -230,12 +284,22 @@ const ContentEditor = ({ initialContent, onSave }: ContentEditorProps) => {
           </button>
         </div>
       )}
-      <button 
-        onClick={toggleEdit}
-        className="edit-button"
-      >
-        {isEditing ? 'Save' : 'Edit'}
-      </button>
+      <div className="editor-buttons">
+        {isEditing ? (
+          <>
+            <button onClick={saveEdit} className="save-button">
+              Save
+            </button>
+            <button onClick={cancelEdit} className="cancel-edit-button">
+              Cancel
+            </button>
+          </>
+        ) : (
+          <button onClick={startEditing} className="edit-button">
+            Edit
+          </button>
+        )}
+      </div>
       
       {showRestoreDialog && (
         <div className="restore-dialog">

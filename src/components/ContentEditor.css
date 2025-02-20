@@ -7,7 +7,6 @@
 
 .edit-button {
   position: absolute;
-  top: 10px;
   right: 10px;
   padding: 8px 16px;
   background-color: #10a37f;
@@ -162,11 +161,28 @@
   border: 1px solid #e2e8f0;
   border-radius: 4px;
   min-width: 200px;
+  max-height: 300px;
+  overflow-y: auto;
 }
 
 .version-controls select:disabled {
   background-color: #f7fafc;
   cursor: not-allowed;
+}
+
+.version-controls select optgroup {
+  font-weight: bold;
+  color: #4b5563;
+  background-color: #f3f4f6;
+}
+
+.version-controls select option {
+  padding: 8px;
+  font-size: 14px;
+}
+
+.version-controls select option:hover {
+  background-color: #e5e7eb;
 }
 
 .restore-button {
@@ -234,5 +250,40 @@
 }
 
 .cancel-button:hover {
+  background-color: #dc2626;
+}
+
+.editor-buttons {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 10px;
+  z-index: 1;
+}
+
+.save-button {
+  padding: 8px 16px;
+  background-color: #10a37f;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.save-button:hover {
+  background-color: #0e906f;
+}
+
+.cancel-edit-button {
+  padding: 8px 16px;
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.cancel-edit-button:hover {
   background-color: #dc2626;
 } 
