@@ -24,6 +24,7 @@ import TextAlign from '@tiptap/extension-text-align';
 import FontFamily from '@tiptap/extension-font-family';
 import TextStyle from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
+import FontSize from '@tiptap/extension-font-size';
 // import Mathematics from '@tiptap/extension-mathematics';
 // import TrackChanges from '@tiptap/extension-track-changes';
 // import Comments from '@tiptap/extension-comments';
@@ -79,12 +80,12 @@ const ContentEditor = ({ initialContent, onSave }: ContentEditorProps) => {
       
       // Special features
       TextAlign.configure({
-        types: ['heading', 'paragraph']
+        types: ['heading', 'paragraph'],
+        defaultAlignment: 'left'
       }),
       FontFamily,
-      // TextStyle.configure({
-      //   defaultFontSize: '16px'
-      // }),
+      TextStyle,
+      FontSize,
       Color,
       
       // Para fórmulas financieras
@@ -97,6 +98,13 @@ const ContentEditor = ({ initialContent, onSave }: ContentEditorProps) => {
     content: initialContent,
     editable: false,
   });
+
+  useEffect(() => {
+    if (editor) {
+      (window as any).editor = editor;
+      console.log('Editor available in console as window.editor');
+    }
+  }, [editor]);
 
   useEffect(() => {
     if (editor) {

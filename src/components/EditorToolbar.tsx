@@ -106,38 +106,49 @@ export const EditorToolbar = ({ editor }: { editor: Editor | null }) => {
 
       {/* Formatting */}
       <div className="toolbar-group">
-        <select
-          onChange={(e) => editor.chain().focus().setFontFamily(e.target.value).run()}
-          value={editor.getAttributes('textStyle').fontFamily}
-        >
-          <option value="Arial">Arial</option>
-          <option value="Times New Roman">Times New Roman</option>
-          <option value="Courier New">Courier New</option>
-          <option value="Georgia">Georgia</option>
-          <option value="Verdana">Verdana</option>
-        </select>
-        
         {/* Font size dropdown */}
         <select
           onChange={(e) => {
-            editor.chain().focus().setMark('textStyle', { fontSize: e.target.value }).run()
+            editor.chain().focus().setFontSize(e.target.value).run()
           }}
-          value={editor.getAttributes('textStyle').fontSize || '16px'}
+          value={(() => {
+            // Obtener todas las marcas en la posición actual
+            const marks = editor.state.selection.$from.marks();
+            console.log('All marks:', marks);
+            
+            // Buscar la marca de fontSize
+            const fontSize = marks.find(mark => 
+              mark.type.name === 'fontSize' || 
+              (mark.type.name === 'textStyle' && mark.attrs.fontSize)
+            );
+            
+            if (fontSize) {
+              console.log('Found fontSize mark:', fontSize);
+              return fontSize.attrs.fontSize;
+            }
+
+            // Si no encontramos un tamaño, revisar el nodo actual
+            const node = editor.state.selection.$from.parent;
+            console.log('Current node:', node.type.name, node.attrs);
+
+            return node.attrs.fontSize || '16px';
+          })()}
         >
+          <option value="10px">10</option>
           <option value="12px">12</option>
-          <option value="14px">14</option>
+          <option value="14px">14 (Normal)</option>
           <option value="16px">16</option>
           <option value="18px">18</option>
           <option value="20px">20</option>
           <option value="24px">24</option>
-          <option value="30px">30</option>
-          <option value="36px">36</option>
+          <option value="28px">28</option>
+          <option value="32px">32</option>
         </select>
 
         <input
           type="color"
           onInput={e => editor.chain().focus().setColor(e.currentTarget.value).run()}
-          value={editor.getAttributes('textStyle').color}
+          value={editor.getAttributes('textStyle').color || '#000000'}
         />
       </div>
 
