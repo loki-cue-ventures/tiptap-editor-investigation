@@ -1,16 +1,30 @@
-import React from 'react';
-import PdfViewer from './components/PdfViewer';
+import React, { useState, useEffect } from 'react';
+import ContentEditor from './components/ContentEditor';
 import './App.css';
 
-// Este es un PDF de ejemplo en base64 que contiene un simple "Hello World"
-const samplePdfBase64 = "JVBERi0xLjcKCjEgMCBvYmogICUgZW50cnkgcG9pbnQKPDwKICAvVHlwZSAvQ2F0YWxvZwogIC9QYWdlcyAyIDAgUgo+PgplbmRvYmoKCjIgMCBvYmoKPDwKICAvVHlwZSAvUGFnZXMKICAvTWVkaWFCb3ggWyAwIDAgMjAwIDIwMCBdCiAgL0NvdW50IDEKICAvS2lkcyBbIDMgMCBSIF0KPj4KZW5kb2JqCgozIDAgb2JqCjw8CiAgL1R5cGUgL1BhZ2UKICAvUGFyZW50IDIgMCBSCiAgL1Jlc291cmNlcyA8PAogICAgL0ZvbnQgPDwKICAgICAgL0YxIDQgMCBSIAogICAgPj4KICA+PgogIC9Db250ZW50cyA1IDAgUgo+PgplbmRvYmoKCjQgMCBvYmoKPDwKICAvVHlwZSAvRm9udAogIC9TdWJ0eXBlIC9UeXBlMQogIC9CYXNlRm9udCAvVGltZXMtUm9tYW4KPj4KZW5kb2JqCgo1IDAgb2JqICAlIHBhZ2UgY29udGVudAo8PAogIC9MZW5ndGggNDQKPj4Kc3RyZWFtCkJUCjcwIDUwIFRECi9GMSAxMiBUZgooSGVsbG8sIFdvcmxkKSBUagpFVAplbmRzdHJlYW0KZW5kb2JqCgp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTAgMDAwMDAgbiAKMDAwMDAwMDA3OSAwMDAwMCBuIAowMDAwMDAwMTczIDAwMDAwIG4gCjAwMDAwMDAzMDEgMDAwMDAgbiAKMDAwMDAwMDM4MCAwMDAwMCBuIAp0cmFpbGVyCjw8CiAgL1NpemUgNgogIC9Sb290IDEgMCBSCj4+CnN0YXJ0eHJlZgo0OTIKJSVFT0YK";
-
+const LOCAL_STORAGE_KEY = 'editor-content';
 
 function App() {
+  const [content, setContent] = useState(() => {
+    // Try to retrieve saved content from localStorage
+    const savedContent = localStorage.getItem(LOCAL_STORAGE_KEY);
+    return savedContent || '<p>This is an AI-generated sample content that you can edit by clicking the "Edit" button.</p>';
+  });
+
+  const handleSave = (newContent: string) => {
+    setContent(newContent);
+    // Save to localStorage
+    localStorage.setItem(LOCAL_STORAGE_KEY, newContent);
+    console.log('Content saved:', newContent);
+  };
+
   return (
     <div className="App">
-      <h1>Visor de PDF</h1>
-      <PdfViewer pdfData={samplePdfBase64} />
+      <h1>AI Content Editor</h1>
+      <ContentEditor 
+        initialContent={content} 
+        onSave={handleSave} 
+      />
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 
 // Necesario para que pdfjs funcione correctamente
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdf.worker.mjs';
 
 interface PdfViewerProps {
   pdfData: string;
@@ -17,6 +17,7 @@ const PdfViewer = ({ pdfData }: PdfViewerProps) => {
   useEffect(() => {
     const loadPdf = async () => {
       try {
+        console.log('hi')
         // Convertir base64 a Uint8Array
         const pdfDataUri = atob(pdfData);
         const pdfArray = new Uint8Array(pdfDataUri.length);
@@ -25,6 +26,7 @@ const PdfViewer = ({ pdfData }: PdfViewerProps) => {
         }
 
         const pdf = await pdfjsLib.getDocument({ data: pdfArray }).promise;
+        console.log(pdf);
         setPdfDoc(pdf);
         setTotalPages(pdf.numPages);
       } catch (error) {
