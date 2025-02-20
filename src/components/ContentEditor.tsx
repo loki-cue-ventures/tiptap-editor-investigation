@@ -30,13 +30,46 @@ import FontSize from '@tiptap/extension-font-size';
 // import Comments from '@tiptap/extension-comments';
 import { EditorToolbar } from './EditorToolbar';
 
+interface Version {
+  content: string;
+  timestamp: number;
+  id: string;
+  restoredFrom?: {
+    id: string;
+    timestamp: number;
+  };
+}
+
 interface ContentEditorProps {
   initialContent: string;
   onSave: (content: string) => void;
 }
 
+const STORAGE_KEY = 'editor-versions';
+
 const ContentEditor = ({ initialContent, onSave }: ContentEditorProps) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [versions, setVersions] = useState<Version[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    return [{
+      content: initialContent,
+      timestamp: Date.now(),
+      id: 'initial'
+    }];
+  });
+  const [currentVersionId, setCurrentVersionId] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const versions = JSON.parse(saved);
+      return versions[versions.length - 1].id;
+    }
+    return 'initial';
+  });
+  const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+  const [versionToRestore, setVersionToRestore] = useState<string | null>(null);
 
   const editor = useEditor({
     extensions: [
@@ -112,22 +145,108 @@ const ContentEditor = ({ initialContent, onSave }: ContentEditorProps) => {
     }
   }, [isEditing, editor]);
 
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(versions));
+  }, [versions]);
+
   const toggleEdit = () => {
-    setIsEditing(!isEditing);
     if (isEditing && editor) {
-      onSave(editor.getHTML());
+      // Al guardar, crear nueva versión
+      const newVersion: Version = {
+        content: editor.getHTML(),
+        timestamp: Date.now(),
+        id: crypto.randomUUID()
+      };
+      
+      setVersions(prev => [...prev, newVersion]);
+      setCurrentVersionId(newVersion.id);
+      onSave(newVersion.content);
+    }
+    setIsEditing(!isEditing);
+  };
+
+  const loadVersion = (versionId: string) => {
+    const version = versions.find(v => v.id === versionId);
+    if (version && editor) {
+      editor.commands.setContent(version.content);
+      setCurrentVersionId(versionId);
+    }
+  };
+
+  const handleRestoreClick = () => {
+    setVersionToRestore(currentVersionId);
+    setShowRestoreDialog(true);
+  };
+
+  const isLatestVersion = currentVersionId === versions[versions.length - 1].id;
+
+  const restoreVersion = () => {
+    const version = versions.find(v => v.id === versionToRestore);
+    if (version && editor) {
+      const newVersion: Version = {
+        content: version.content,
+        timestamp: Date.now(),
+        id: crypto.randomUUID(),
+        restoredFrom: {
+          id: version.id,
+          timestamp: version.timestamp
+        }
+      };
+      
+      editor.commands.setContent(version.content);
+      setVersions(prev => [...prev, newVersion]);
+      setCurrentVersionId(newVersion.id);
+      setShowRestoreDialog(false);
+      setVersionToRestore(null);
     }
   };
 
   return (
     <div className="content-editor">
       {isEditing && <EditorToolbar editor={editor} />}
+      {!isEditing && (
+        <div className="version-controls">
+          <select
+            value={currentVersionId}
+            onChange={(e) => loadVersion(e.target.value)}
+          >
+            {versions.map(version => (
+              <option key={version.id} value={version.id}>
+                {version.restoredFrom 
+                  ? `${new Date(version.timestamp).toLocaleString()} (Restored from ${new Date(version.restoredFrom.timestamp).toLocaleString()})`
+                  : new Date(version.timestamp).toLocaleString()
+                }
+                {version.id === versions[versions.length - 1].id ? ' (Latest)' : ''}
+              </option>
+            ))}
+          </select>
+          <button 
+            onClick={handleRestoreClick}
+            className={`restore-button ${isLatestVersion ? 'disabled' : ''}`}
+            disabled={isLatestVersion}
+            title={isLatestVersion ? 'This is the latest version' : 'Restore this version'}
+          >
+            {isLatestVersion ? 'Latest Version' : 'Restore This Version'}
+          </button>
+        </div>
+      )}
       <button 
         onClick={toggleEdit}
         className="edit-button"
       >
         {isEditing ? 'Save' : 'Edit'}
       </button>
+      
+      {showRestoreDialog && (
+        <div className="restore-dialog">
+          <p>Do you want to restore this version? A new version will be created based on this one.</p>
+          <div className="dialog-buttons">
+            <button onClick={restoreVersion} className="confirm-button">Restore</button>
+            <button onClick={() => setShowRestoreDialog(false)} className="cancel-button">Cancel</button>
+          </div>
+        </div>
+      )}
+      
       <div className={`editor-container ${isEditing ? 'editing' : ''}`}>
         <EditorContent editor={editor} />
       </div>
